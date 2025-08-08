@@ -14,12 +14,35 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
        }()
     private var gridLabels: [[UILabel]] = []
     
+    private let scoreLabel: UILabel = {
+           let label = UILabel()
+           label.textAlignment = .center
+           label.font = UIFont.boldSystemFont(ofSize: 24)
+           label.textColor = .white
+           label.text = "0"
+           return label
+       }()
+    
+    private let gameOverLabel: UILabel = {
+         let label = UILabel()
+         label.textColor = .red
+         label.font = UIFont.boldSystemFont(ofSize: 32)
+         label.textAlignment = .center
+         label.text = "GAME OVER"
+         label.isHidden = true
+         return label
+     }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGameGrid()
         setupControls()
         
         presenter = TetrisPresenter(view: self)
+    }
+
+    func updateScore(_ score: Int) {
+        scoreLabel.text = "\(score)"
     }
 }
     private extension TetrisViewController {

@@ -141,6 +141,23 @@ class TetrisModel {
          return linesCleared
      }
     
+    func reset() {
+        grid = Array(repeating: Array(repeating: 0, count: 10), count: 20)
+        generateNewPiece()
+    }
+    
+    func isGameOver() -> Bool {
+        for (i, row) in currentPiece.enumerated() {
+            for (j, cell) in row.enumerated() where cell != 0 {
+                let r = currentPosition.row + i
+                if r <= 1 { // Фигура в верхних 2 рядах
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
 }
 
 enum Direction {

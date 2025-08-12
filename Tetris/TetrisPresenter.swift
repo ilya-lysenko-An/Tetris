@@ -6,11 +6,13 @@
 //
 
 import Foundation
+import UIKit
 
 protocol TetrisViewProtocol: AnyObject {
     func updateGrid(_ grid: [[Int]])
     func updateScore(_ score: Int)
     func showGameOver(_ isVisible: Bool)
+    func rotatePiece()
 }
 
 class TetrisPresenter {
@@ -87,6 +89,14 @@ class TetrisPresenter {
            timer?.invalidate()
            view?.showGameOver(true)
        }
+    
+    func rotatePiece() {
+        if model.rotate() {
+            view?.updateGrid(model.getGridWithPiece())
+        } else {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
     
     private func addScore(for lines: Int) {
         switch lines {

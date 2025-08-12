@@ -11,23 +11,23 @@ import UIKit
 class TetrisModel {
     
     private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: 10), count: 20)
+    private var _currentPiece: [[Int]] = Tetromino.shapes[.I]![0]
+    private var currentPosition: (row: Int, col: Int) = (0, 3)
+    private var currentRotation = 0
     
-    // Текущее состояние
-    private var _currentPiece: [[Int]] = Tetromino.shapes[.I]!
-    private var currentPosition: (row: Int, col: Int) = (0, 3) // Стартовая позиция
-    
-    // Текущая фигура (вычисляемое свойство)
     var currentPiece: [[Int]] {
          get { return _currentPiece }
          set { _currentPiece = newValue }
      }
     
     var currentType: TetrominoType {
-         guard let type = Tetromino.shapes.first(where: { $0.value == currentPiece })?.key else {
-             return .I
-         }
-         return type
-     }
+        for (type, rotations) in Tetromino.shapes {
+            if rotations.contains(where: { $0 == _currentPiece }) {
+                return type
+            }
+        }
+        return .I
+    }
     
     func movePiece(direction: Direction) -> Bool {
         let newPosition: (row: Int, col: Int)
@@ -82,21 +82,50 @@ class TetrisModel {
     
     func generateNewPiece() {
           let randomType = TetrominoType.allCases.randomElement() ?? .I
-          currentPiece = Tetromino.shapes[randomType]!
+        _currentPiece = Tetromino.shapes[randomType]![0]
           currentPosition = (0, 3)
       }
     
     
-    func roate() -> Bool {
-        let roatePiece = currentPiece.indices.map { i in
-            currentPiece.indices.reversed().map { j in
-                currentPiece[i][j]
+    func rotate() -> Bool {
+           guard currentType != .O else { return false }
+           
+           let nextRotation = (currentRotation + 1) % currentType.rotationCount
+           let rotatedPiece = Tetromino.shapes[currentType]![nextRotation]
+           
+           if canPlace(rotatedPiece, at: currentPosition) {
+               _currentPiece = rotatedPiece
+               currentRotation = nextRotation
+               return true
+           }
+           return tryWallKick(rotatedPiece: rotatedPiece)
+       }
+
+    private func rotateMatrix(_ matrix: [[Int]]) -> [[Int]] {
+        let size = matrix.count
+        var result = Array(repeating: Array(repeating: 0, count: size), count: size)
+        for i in 0..<size {
+            for j in 0..<size {
+                result[j][size - 1 - i] = matrix[i][j]
             }
         }
+        return result
+    }
+
+    private func tryWallKick(rotatedPiece: [[Int]]) -> Bool {
+        let offsets = [
+            (0, -1), (0, 1),
+            (-1, 0), (1, 0),
+            (1, 1), (-1, -1)
+        ]
         
-        if canPlace(roatePiece, at: currentPosition){
-            currentPiece = roatePiece
-            return true
+        for (dr, dc) in offsets {
+            let newPosition = (currentPosition.row + dr, currentPosition.col + dc)
+            if canPlace(rotatedPiece, at: newPosition) {
+                currentPosition = newPosition
+                currentPiece = rotatedPiece
+                return true
+            }
         }
         return false
     }
@@ -111,7 +140,7 @@ class TetrisModel {
                 }
             }
         }
-        return false
+        return true
     }
     
     func mergePiece() {
@@ -164,58 +193,5 @@ enum Direction {
     case left, right, down
 }
 
-enum TetrominoType: Int, CaseIterable {
-    case I, J, L, O, S, T, Z
-    
-    var color: UIColor {
-        switch self {
-        case .I: return .systemTeal
-        case .J: return .systemBlue
-        case .L: return .systemOrange
-        case .O: return .systemYellow
-        case .S: return .systemGreen
-        case .T: return .systemPurple
-        case .Z: return .systemRed
-        }
-    }
-}
 
-struct Tetromino {
-    static let shapes: [TetrominoType: [[Int]]] = [
-        .I: [
-            [0, 0, 0, 0],
-            [1, 1, 1, 1],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ],
-        .J: [
-            [1, 0, 0],
-            [1, 1, 1],
-            [0, 0, 0]
-        ],
-        .L: [
-            [0, 0, 1],
-            [1, 1, 1],
-            [0, 0, 0]
-        ],
-        .O: [
-            [1, 1],
-            [1, 1]
-        ],
-        .S: [
-            [0, 1, 1],
-            [1, 1, 0],
-            [0, 0, 0]
-        ],
-        .T: [
-            [0, 1, 0],
-            [1, 1, 1],
-            [0, 0, 0]
-        ],
-        .Z: [
-            [1, 1, 0],
-            [0, 1, 1],
-            [0, 0, 0]
-        ]
-    ]
-}
+

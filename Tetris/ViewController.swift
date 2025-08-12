@@ -9,6 +9,8 @@ import UIKit
 
 class TetrisViewController: UIViewController, TetrisViewProtocol {
 
+    private var rotateButton: UIButton!
+    
     private var gridLabels: [[UILabel]] = []
     
     private let scoreLabel: UILabel = {
@@ -105,6 +107,20 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
     @objc private func restartGame() {
         presenter.startGame()
     }
+    
+    @objc internal func rotatePiece() {
+        presenter.rotatePiece()
+        
+        
+        // 2. Анимация кнопки (опционально)
+        UIView.animate(withDuration: 0.1, animations: {
+            self.rotateButton.transform = CGAffineTransform(rotationAngle: .pi/4)
+        }) { _ in
+            UIView.animate(withDuration: 0.1) {
+                self.rotateButton.transform = .identity
+            }
+        }
+    }
 }
 
 private extension TetrisViewController {
@@ -184,27 +200,37 @@ private extension TetrisViewController {
     }
     
     func setupControls() {
+        // 1. Сначала создаем все кнопки
         let leftButton = createButton(title: "←", action: #selector(moveLeft))
         let rightButton = createButton(title: "→", action: #selector(moveRight))
         let downButton = createButton(title: "↓", action: #selector(moveDown))
+        let rotateButton = createButton(title: "↻", action: #selector(rotatePiece))
         
-        let stackView = UIStackView(arrangedSubviews: [leftButton, downButton, rightButton])
+        // 2. Сохраняем кнопку поворота как свойство класса
+        self.rotateButton = rotateButton
+        
+        // 3. Теперь создаем stackView
+        let stackView = UIStackView(arrangedSubviews: [leftButton, downButton, rightButton, rotateButton])
         stackView.axis = .horizontal
         stackView.distribution = .equalSpacing
-        stackView.spacing = 20
+        stackView.spacing = 15
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
+        // 4. Добавляем stackView на экран
         view.addSubview(stackView)
         
+        // 5. Настраиваем констрейнты
         NSLayoutConstraint.activate([
             stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             stackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             leftButton.widthAnchor.constraint(equalToConstant: 60),
             rightButton.widthAnchor.constraint(equalToConstant: 60),
             downButton.widthAnchor.constraint(equalToConstant: 60),
+            rotateButton.widthAnchor.constraint(equalToConstant: 60), // Добавляем для кнопки поворота
             leftButton.heightAnchor.constraint(equalToConstant: 40),
             rightButton.heightAnchor.constraint(equalToConstant: 40),
-            downButton.heightAnchor.constraint(equalToConstant: 40)
+            downButton.heightAnchor.constraint(equalToConstant: 40),
+            rotateButton.heightAnchor.constraint(equalToConstant: 40)
         ])
     }
     

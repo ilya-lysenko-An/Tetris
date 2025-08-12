@@ -8,10 +8,14 @@
 import UIKit
 
 class TetrisViewController: UIViewController, TetrisViewProtocol {
-
+   
+    private var downButton: UIButton!
+    
     private var rotateButton: UIButton!
     
     private var gridLabels: [[UILabel]] = []
+    
+    private var downButtonTimer: Timer?
     
     private let scoreLabel: UILabel = {
         let label = UILabel()
@@ -92,11 +96,11 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
         }
     }
     
-    @objc private func moveLeft() {
+    @objc private func moveLeft(_ sender: UIButton) {
         presenter.movePiece(.left)
     }
     
-    @objc private func moveRight() {
+    @objc private func moveRight(_ sender: UIButton) {
         presenter.movePiece(.right)
     }
     
@@ -108,19 +112,41 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
         presenter.startGame()
     }
     
-    @objc internal func rotatePiece() {
-        presenter.rotatePiece()
+    @objc private func rotatePiece(_ sender: UIButton) {
+        presenter.rotatePiece() 
         
-        
-        // 2. Анимация кнопки (опционально)
         UIView.animate(withDuration: 0.1, animations: {
-            self.rotateButton.transform = CGAffineTransform(rotationAngle: .pi/4)
+            sender.transform = CGAffineTransform(rotationAngle: .pi/4)
         }) { _ in
             UIView.animate(withDuration: 0.1) {
-                self.rotateButton.transform = .identity
+                sender.transform = .identity
             }
         }
     }
+    @objc private func downButtonPressed(_ sender: UIButton) {
+        presenter.movePiece(.down)
+        downButtonTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.presenter.movePiece(.down)
+        }
+    }
+
+    @objc private func buttonReleased(_ sender: UIButton) {
+        downButtonTimer?.invalidate()
+        downButtonTimer = nil
+    }
+    
+    private func createButton(title: String, selector: Selector?) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 24)
+        if let selector = selector {
+            button.addTarget(self, action: selector, for: .touchUpInside)
+        }
+        button.backgroundColor = .systemGray5
+        button.layer.cornerRadius = 8
+        return button
+    }
+    
 }
 
 private extension TetrisViewController {
@@ -200,33 +226,45 @@ private extension TetrisViewController {
     }
     
     func setupControls() {
-        // 1. Сначала создаем все кнопки
-        let leftButton = createButton(title: "←", action: #selector(moveLeft))
-        let rightButton = createButton(title: "→", action: #selector(moveRight))
-        let downButton = createButton(title: "↓", action: #selector(moveDown))
-        let rotateButton = createButton(title: "↻", action: #selector(rotatePiece))
+        // 1. Создаем все кнопки
+        let leftButton = createButton(title: "←", selector: #selector(moveLeft(_:)))
+        let rightButton = createButton(title: "→", selector: #selector(moveRight(_:)))
+        let downButton = createButton(title: "↓", selector: nil)
+        let rotateButton = createButton(title: "↻", selector: #selector(rotatePiece(_:)))
         
-        // 2. Сохраняем кнопку поворота как свойство класса
+        // 2. Настраиваем кнопку "Вниз" с обработкой удержания
+        downButton.addTarget(self, action: #selector(downButtonPressed(_:)), for: .touchDown)
+        downButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpInside)
+        downButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpOutside)
+        
+        // 3. Сохраняем кнопки как свойства класса
         self.rotateButton = rotateButton
+        self.downButton = downButton
         
-        // 3. Теперь создаем stackView
-        let stackView = UIStackView(arrangedSubviews: [leftButton, downButton, rightButton, rotateButton])
-        stackView.axis = .horizontal
-        stackView.distribution = .equalSpacing
+        // 4. Создаем и настраиваем StackView
+        let stackView = UIStackView()
+        stackView.axis = NSLayoutConstraint.Axis.horizontal
+        stackView.distribution = UIStackView.Distribution.equalSpacing
         stackView.spacing = 15
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
-        // 4. Добавляем stackView на экран
+        // 5. Добавляем кнопки в StackView
+        stackView.addArrangedSubview(leftButton)
+        stackView.addArrangedSubview(downButton)
+        stackView.addArrangedSubview(rightButton)
+        stackView.addArrangedSubview(rotateButton)
+        
+        // 6. Добавляем StackView на экран
         view.addSubview(stackView)
         
-        // 5. Настраиваем констрейнты
+        // 7. Настраиваем констрейнты
         NSLayoutConstraint.activate([
             stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             stackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             leftButton.widthAnchor.constraint(equalToConstant: 60),
             rightButton.widthAnchor.constraint(equalToConstant: 60),
             downButton.widthAnchor.constraint(equalToConstant: 60),
-            rotateButton.widthAnchor.constraint(equalToConstant: 60), // Добавляем для кнопки поворота
+            rotateButton.widthAnchor.constraint(equalToConstant: 60),
             leftButton.heightAnchor.constraint(equalToConstant: 40),
             rightButton.heightAnchor.constraint(equalToConstant: 40),
             downButton.heightAnchor.constraint(equalToConstant: 40),

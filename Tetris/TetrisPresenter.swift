@@ -12,7 +12,6 @@ protocol TetrisViewProtocol: AnyObject {
     func updateGrid(_ grid: [[Int]])
     func updateScore(_ score: Int)
     func showGameOver(_ isVisible: Bool)
-    func rotatePiece()
 }
 
 class TetrisPresenter {
@@ -94,6 +93,7 @@ class TetrisPresenter {
         if model.rotate() {
             view?.updateGrid(model.getGridWithPiece())
         } else {
+        
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
     }

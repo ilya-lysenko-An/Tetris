@@ -88,18 +88,21 @@ class TetrisModel {
     
     
     func rotate() -> Bool {
-           guard currentType != .O else { return false }
-           
-           let nextRotation = (currentRotation + 1) % currentType.rotationCount
-           let rotatedPiece = Tetromino.shapes[currentType]![nextRotation]
-           
-           if canPlace(rotatedPiece, at: currentPosition) {
-               _currentPiece = rotatedPiece
-               currentRotation = nextRotation
-               return true
-           }
-           return tryWallKick(rotatedPiece: rotatedPiece)
-       }
+        guard currentType != .O else { return false } // Квадрат не вращается
+        
+        let rotations = Tetromino.shapes[currentType]!
+        let newRotationIndex = (currentRotation + 1) % rotations.count
+        let rotatedPiece = rotations[newRotationIndex]
+        
+        if canPlace(rotatedPiece, at: currentPosition) {
+            _currentPiece = rotatedPiece
+            currentRotation = newRotationIndex
+            return true
+        }
+        
+        // Попробуем Wall Kick (сдвиг при повороте у стенки)
+        return tryWallKick(rotatedPiece: rotatedPiece)
+    }
 
     private func rotateMatrix(_ matrix: [[Int]]) -> [[Int]] {
         let size = matrix.count
@@ -113,20 +116,18 @@ class TetrisModel {
     }
 
     private func tryWallKick(rotatedPiece: [[Int]]) -> Bool {
-        let offsets = [
-            (0, -1), (0, 1),
-            (-1, 0), (1, 0),
-            (1, 1), (-1, -1)
-        ]
+        let offsets = [(0, -1), (0, 1), (-1, 0), (1, 0)] // Смещения: влево, вправо, вверх, вниз
         
-        for (dr, dc) in offsets {
-            let newPosition = (currentPosition.row + dr, currentPosition.col + dc)
+        for (dx, dy) in offsets {
+            let newPosition = (row: currentPosition.row + dy, col: currentPosition.col + dx)
             if canPlace(rotatedPiece, at: newPosition) {
+                _currentPiece = rotatedPiece
                 currentPosition = newPosition
-                currentPiece = rotatedPiece
+                currentRotation = (currentRotation + 1) % Tetromino.shapes[currentType]!.count
                 return true
             }
         }
+        
         return false
     }
     

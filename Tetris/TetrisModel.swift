@@ -20,6 +20,14 @@ class TetrisModel {
          set { _currentPiece = newValue }
      }
     
+    var currentPieceRow: Int {
+        return currentPosition.row
+    }
+
+    var currentPieceCol: Int {
+        return currentPosition.col
+    }
+    
     var currentType: TetrominoType {
         for (type, rotations) in Tetromino.shapes {
             if rotations.contains(where: { $0 == _currentPiece }) {
@@ -41,10 +49,28 @@ class TetrisModel {
             newPosition = (currentPosition.row + 1, currentPosition.col)
         }
         
-        if canMove(to: newPosition) {
+        if !checkCollision(atRow: newPosition.row, col: newPosition.col, piece: currentPiece) {
             currentPosition = newPosition
             print("Фигура перемещена:", currentPosition)
             return true
+        }
+        return false
+    }
+    
+    func checkCollision(atRow row: Int, col: Int, piece: [[Int]]) -> Bool {
+        for (i, pieceRow) in piece.enumerated() {
+            for (j, cell) in pieceRow.enumerated() where cell != 0 {
+                let r = row + i
+                let c = col + j
+                
+                if c < 0 || c >= 10 || r >= 20 {
+                    return true
+                }
+                
+                if r >= 0 && grid[r][c] != 0 {
+                    return true
+                }
+            }
         }
         return false
     }
@@ -99,8 +125,6 @@ class TetrisModel {
             currentRotation = newRotationIndex
             return true
         }
-        
-        // Попробуем Wall Kick (сдвиг при повороте у стенки)
         return tryWallKick(rotatedPiece: rotatedPiece)
     }
 
@@ -133,15 +157,26 @@ class TetrisModel {
     
     private func canPlace(_ piece: [[Int]], at position: (row: Int, col: Int)) -> Bool {
         for (i, row) in piece.enumerated() {
-            for (j, cell ) in row.enumerated() where cell != 0 {
+            for (j, cell) in row.enumerated() where cell != 0 {
                 let r = position.row + i
                 let c = position.col + j
-                if r >= 20 || c < 0 || c >= 10 || (r >= 0 && grid[r][c] != 0){
-                    
+                if r >= 20 || c < 0 || c >= 10 || (r >= 0 && grid[r][c] != 0) {
+                    return false
                 }
             }
         }
         return true
+    }
+    
+    func calculateGhostPiecePosition() -> (row: Int, col: Int) {
+        var currentRow = currentPosition.row
+        let currentCol = currentPosition.col
+        
+        while !checkCollision(atRow: currentRow + 1, col: currentCol, piece: currentPiece) {
+            currentRow += 1
+        }
+        
+        return (currentRow, currentCol)
     }
     
     func mergePiece() {

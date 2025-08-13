@@ -98,6 +98,32 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
         }
     }
     
+    func updateGridWithGhost(_ grid: [[Int]], ghostPosition: (row: Int, col: Int)) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            for row in 0..<20 {
+                for col in 0..<10 {
+                    self.gridLabels[row][col].backgroundColor =
+                        grid[row][col] == 0 ? .black : self.colorForCell(value: grid[row][col])
+                }
+            }
+            
+            let piece = self.presenter.currentPiece
+            for (r, pieceRow) in piece.enumerated() {
+                for (c, cell) in pieceRow.enumerated() where cell != 0 {
+                    let ghostRow = ghostPosition.row + r
+                    let ghostCol = ghostPosition.col + c
+                    
+                    if (0..<20).contains(ghostRow) && (0..<10).contains(ghostCol) {
+                        self.gridLabels[ghostRow][ghostCol].backgroundColor =
+                            self.colorForCell(value: cell).withAlphaComponent(0.3)
+                    }
+                }
+            }
+        }
+    }
+    
     @objc private func moveLeft(_ sender: UIButton) {
         presenter.movePiece(.left)
     }

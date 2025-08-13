@@ -10,6 +10,7 @@ import UIKit
 
 protocol TetrisViewProtocol: AnyObject {
     func updateGrid(_ grid: [[Int]])
+    func updateGridWithGhost(_ grid: [[Int]], ghostPosition: (row: Int, col: Int))
     func updateScore(_ score: Int)
     func showGameOver(_ isVisible: Bool)
 }
@@ -21,6 +22,11 @@ class TetrisPresenter {
     private var score = 0
     private var timer: Timer?
     private var fallSpeed: TimeInterval = 1.0
+    private var ghostPiecePosition: (row: Int, col: Int)?
+    
+    var currentPiece: [[Int]] {
+        return model.currentPiece
+    }
     
     init(view: TetrisViewProtocol) {
         self.model = TetrisModel()
@@ -52,11 +58,24 @@ class TetrisPresenter {
     
     func movePiece(_ direction: Direction) {
            if model.movePiece(direction: direction) {
-               view?.updateGrid(model.getGridWithPiece())
+               updateView()
            } else if direction == .down {
                handlePieceLanding()
            }
        }
+    
+    private func updateView() {
+           updateGhostPosition()
+           if let ghostPos = ghostPiecePosition {
+               view?.updateGridWithGhost(model.getGridWithPiece(), ghostPosition: ghostPos)
+           } else {
+               view?.updateGrid(model.getGridWithPiece())
+           }
+       }
+    
+    private func updateGhostPosition() {
+         ghostPiecePosition = model.calculateGhostPiecePosition()
+     }
     
     private func handlePieceLanding() {
           model.mergePiece()

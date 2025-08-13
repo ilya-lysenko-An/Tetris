@@ -16,6 +16,8 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
     private var gridLabels: [[UILabel]] = []
     
     private var downButtonTimer: Timer?
+    private var leftButtonTimer: Timer?
+    private var rightButtonTimer: Timer?
     
     private let scoreLabel: UILabel = {
         let label = UILabel()
@@ -113,7 +115,7 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
     }
     
     @objc private func rotatePiece(_ sender: UIButton) {
-        presenter.rotatePiece() 
+        presenter.rotatePiece()
         
         UIView.animate(withDuration: 0.1, animations: {
             sender.transform = CGAffineTransform(rotationAngle: .pi/4)
@@ -129,10 +131,30 @@ class TetrisViewController: UIViewController, TetrisViewProtocol {
             self?.presenter.movePiece(.down)
         }
     }
+    
+    @objc private func leftButtonPressed(_ sender: UIButton) {
+        presenter.movePiece(.left)
+        downButtonTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.presenter.movePiece(.left)
+        }
+    }
+    
+    @objc private func rightButtonPressed(_ sender: UIButton) {
+        presenter.movePiece(.right)
+        downButtonTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.presenter.movePiece(.right)
+        }
+    }
+    
+    
 
     @objc private func buttonReleased(_ sender: UIButton) {
         downButtonTimer?.invalidate()
         downButtonTimer = nil
+        leftButtonTimer?.invalidate()
+        leftButtonTimer = nil
+        rightButtonTimer?.invalidate()
+        rightButtonTimer = nil
     }
     
     private func createButton(title: String, selector: Selector?) -> UIButton {
@@ -226,13 +248,20 @@ private extension TetrisViewController {
     }
     
     func setupControls() {
-        // 1. Создаем все кнопки
-        let leftButton = createButton(title: "←", selector: #selector(moveLeft(_:)))
-        let rightButton = createButton(title: "→", selector: #selector(moveRight(_:)))
+        let leftButton = createButton(title: "←", selector: nil) // Убираем selector, так как будем использовать touchDown
+        let rightButton = createButton(title: "→", selector: nil)
         let downButton = createButton(title: "↓", selector: nil)
         let rotateButton = createButton(title: "↻", selector: #selector(rotatePiece(_:)))
         
-        // 2. Настраиваем кнопку "Вниз" с обработкой удержания
+        // Настройка обработчиков для всех кнопок
+        leftButton.addTarget(self, action: #selector(leftButtonPressed(_:)), for: .touchDown)
+        leftButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpInside)
+        leftButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpOutside)
+        
+        rightButton.addTarget(self, action: #selector(rightButtonPressed(_:)), for: .touchDown)
+        rightButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpInside)
+        rightButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpOutside)
+        
         downButton.addTarget(self, action: #selector(downButtonPressed(_:)), for: .touchDown)
         downButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpInside)
         downButton.addTarget(self, action: #selector(buttonReleased(_:)), for: .touchUpOutside)
